@@ -19,6 +19,8 @@ import org.springframework.kafka.listener.DefaultErrorHandler;
 import org.springframework.kafka.support.serializer.ErrorHandlingDeserializer;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
 
+import com.bank.bank.dto.KafkaDTO;
+
 
 @Configuration
 @ConditionalOnProperty(prefix = "service.kafka", name = "enabled", matchIfMissing = false)
@@ -61,6 +63,34 @@ public class KafkaConsumerConfiguration {
 	public KafkaListenerContainerFactory<ConcurrentMessageListenerContainer<String, String>> kafkaListenerContainerFactoryUser() {
 		ConcurrentKafkaListenerContainerFactory<String, String> factory = new ConcurrentKafkaListenerContainerFactory<>();
 		factory.setConsumerFactory(consumerFactoryUser());
+		factory.setCommonErrorHandler(new DefaultErrorHandler());
+		factory.getContainerProperties().setAckMode(AckMode.MANUAL_IMMEDIATE);
+		factory.getContainerProperties().setSyncCommits(false);
+		return factory;
+	}
+	
+	@Bean
+	public ConsumerFactory<String, KafkaDTO> consumerFactoryBank() {
+		JsonDeserializer<KafkaDTO> deserializer = new JsonDeserializer<>(KafkaDTO.class);
+		deserializer.setRemoveTypeHeaders(false);
+		deserializer.addTrustedPackages("*");
+		deserializer.setUseTypeMapperForKey(true);
+
+		ErrorHandlingDeserializer<String> keyDeserializer = new ErrorHandlingDeserializer<>(new StringDeserializer());
+		ErrorHandlingDeserializer<KafkaDTO> valueDeserializer = new ErrorHandlingDeserializer<>(deserializer);
+
+		Map<String, Object> props = consumerConfigs();
+		props.put(ConsumerConfig.GROUP_ID_CONFIG, "ESAF_USER");
+		props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, keyDeserializer);
+		props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, valueDeserializer);
+
+		return new DefaultKafkaConsumerFactory<>(props, keyDeserializer, valueDeserializer);
+	}
+
+	@Bean
+	public KafkaListenerContainerFactory<ConcurrentMessageListenerContainer<String, KafkaDTO>> kafkaListenerContainerFactoryBank() {
+		ConcurrentKafkaListenerContainerFactory<String, KafkaDTO> factory = new ConcurrentKafkaListenerContainerFactory<>();
+		factory.setConsumerFactory(consumerFactoryBank());
 		factory.setCommonErrorHandler(new DefaultErrorHandler());
 		factory.getContainerProperties().setAckMode(AckMode.MANUAL_IMMEDIATE);
 		factory.getContainerProperties().setSyncCommits(false);

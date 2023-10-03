@@ -14,6 +14,8 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.core.ProducerFactory;
 import org.springframework.kafka.support.serializer.JsonSerializer;
 
+import com.bank.bank.dto.KafkaDTO;
+
 @Configuration
 @ConditionalOnProperty(prefix = "service.kafka", name = "enabled", matchIfMissing = false)
 public class KafkaProducerConfiguration {
@@ -39,5 +41,15 @@ public class KafkaProducerConfiguration {
 	@Bean(name = "kafkaTemplateForUser")
 	public KafkaTemplate<String, String> kafkaTemplateForUser() {
 		return new KafkaTemplate<>(producerFactoryUser());
+	}
+	
+	@Bean
+	public ProducerFactory<String, KafkaDTO> producerFactoryBank(){
+		return new DefaultKafkaProducerFactory<>(producerConfigs());
+	}
+	
+	@Bean(name = "kafkaTemplateForBank")
+	public KafkaTemplate<String, KafkaDTO> kafkaTemplateForBank() {
+		return new KafkaTemplate<>(producerFactoryBank());
 	}
 }
